@@ -1,7 +1,10 @@
-import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useRouter } from 'expo-router';
+import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 export default function SignIn() {
+  const router=useRouter();
   return (
+    <ScrollView>  
     <View style={styles.container}>
       <Text style={styles.title}>Lets Sign You In</Text>
       <Text style={styles.subtitle}>Welcome Back,</Text>
@@ -26,7 +29,21 @@ export default function SignIn() {
         <Text style={styles.buttonText}>Sign In</Text>
       </TouchableOpacity>
 
+
+      {/* SIGNUP INFO*/}
+      <View style={{paddingTop:"2px", padding:"30px", alignItems:'center'}}>
+        <Text style={{ color: '#777',fontSize: 16,marginBottom:"2px"}}>New User?</Text>
+        <TouchableOpacity onPress={() => router.push("auth/SignUp")}>
+            <Text
+              style={styles.subtitle}
+            >
+              Create New Account
+            </Text>
+          </TouchableOpacity>
+      </View>
+
     </View>
+    </ScrollView>
   )
 }
 
