@@ -1,10 +1,24 @@
+import { useAuth, useOAuth, useSignIn } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
-import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Image } from 'react-native';
+
+import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+
+import * as WebBrowser from 'expo-web-browser';
+import { useState } from 'react';
+WebBrowser.maybeCompleteAuthSession();
 
 export default function SignIn() {
   const router=useRouter();
+  const { signIn, setActive, isLoaded } = useSignIn();
+  const { isSignedIn } = useAuth();
+  const { startOAuthFlow } = useOAuth({ strategy: 'oauth_google' });
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+
   return (
-    <ScrollView>  
+    <ScrollView contentContainerStyle={styles.scrollContainer}>  
     <View style={styles.container}>
       <Text style={styles.title}>Lets Sign You In</Text>
       <Text style={styles.subtitle}>Welcome Back,</Text>
@@ -13,34 +27,74 @@ export default function SignIn() {
       {/* EMAIL */}
       <View style={styles.inputContainer}>
         <Text style={styles.label}>Email</Text>
-        <TextInput style={styles.input} placeholder='Enter your email' placeholderTextColor="#999" autoCapitalize='none' keyboardType='email-address'>
+        <TextInput style={styles.input} placeholder='Enter your email' placeholderTextColor="#999" autoCapitalize='none' keyboardType='email-address' value={email} onChangeText={setEmail}>
         </TextInput>
       </View>
 
       {/* PASSWORD */}
       <View style={styles.inputContainer}>
         <Text style={styles.label}>Password</Text>
-        <TextInput style={styles.input} secureTextEntry='true' placeholderTextColor="#999" placeholder='Enter your password' autoCapitalize='none' keyboardType='password'>
+        <TextInput style={styles.input} secureTextEntry={true} placeholderTextColor="#999" placeholder='Enter your password' autoCapitalize='none' keyboardType='default' value={password} onChangeText={setPassword}>
         </TextInput>
       </View>
 
       {/* BUTTON */}
-      <TouchableOpacity style={styles.button}>
-        <Text style={styles.buttonText}>Sign In</Text>
+      <TouchableOpacity style={styles.button} onPress={async () => {
+                if (!isLoaded) return;
+                try {
+                  // Simple sign-in
+                  const signInResult = await signIn.create({ identifier: email, password });
+
+                  if (signInResult.status === 'complete') {
+                    await setActive({ session: signInResult.createdSessionId });
+                    router.replace('/(tabs)');
+                  } else {
+                    Alert.alert('Sign-in Error', 'Check your credentials or verify your account.');
+                  }
+                } catch (err) {
+                  console.error('Sign-in error:', err);
+                  Alert.alert('Sign-in Failed', err.errors?.[0]?.message || 'Invalid credentials.');
+                }}
+}>
+        <Text style={styles.buttonText} 
+            >Sign In</Text>
       </TouchableOpacity>
 
 
+        <TouchableOpacity
+          style={[styles.button, { backgroundColor: '#000000', marginTop: 20 }]}
+          onPress={async () => {
+            try {
+              const { createdSessionId, setActive } = await startOAuthFlow();
+              if (createdSessionId) {
+                await setActive({ session: createdSessionId });
+                router.replace('(tabs)');
+              }
+            } catch (err) {
+              console.error('Google sign-in error:', err);
+            }
+          }}
+        >
+        <View style={styles.googleButtonContent}>
+  <Image
+    source={require('@/assets/images/google-logo.png')}
+    style={styles.googleLogo}
+  />
+  <Text style={[styles.buttonText, { color: '#fff' }]}>Sign in with Google</Text>
+</View>
+
+        </TouchableOpacity>
+
+
+
       {/* SIGNUP INFO*/}
-      <View style={{paddingTop:"2px", padding:"30px", alignItems:'center'}}>
-        <Text style={{ color: '#777',fontSize: 16,marginBottom:"2px"}}>New User?</Text>
+      <View style={styles.footerContainer}>
+        <Text style={styles.footerText}>New User?</Text>
         <TouchableOpacity onPress={() => router.push("auth/SignUp")}>
-            <Text
-              style={styles.subtitle}
-            >
-              Create New Account
-            </Text>
-          </TouchableOpacity>
+          <Text style={styles.subtitle}>Create New Account</Text>
+        </TouchableOpacity>
       </View>
+
 
     </View>
     </ScrollView>
@@ -48,6 +102,9 @@ export default function SignIn() {
 }
 
 const styles = StyleSheet.create({
+  scrollContainer: {
+  flexGrow: 1,
+},
   container: {
     flex: 1,
     backgroundColor: '#0d0d0d',
@@ -56,9 +113,9 @@ const styles = StyleSheet.create({
   },
   title: {
     color: '#fff',
-    fontSize: 28,
+    fontSize: 30,
     fontWeight: '700',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   subtitle: {
     color: '#ccc',
@@ -66,15 +123,15 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   subtitle2: {
-    color: '#777',
+    color: '#999',
     fontSize: 16,
     marginBottom: 40,
   },
   inputContainer: {
-    marginBottom: 24,
+    marginBottom: 22,
   },
   label: {
-    color: '#ccc',
+    color: '#bbb',
     fontSize: 14,
     marginBottom: 6,
   },
@@ -89,19 +146,41 @@ const styles = StyleSheet.create({
     borderColor: '#333',
   },
   button: {
-    backgroundColor: '#e3edf8ff',
+    backgroundColor: '#e3edf8',
     paddingVertical: 14,
     borderRadius: 10,
     alignItems: 'center',
-    marginTop: 30,
-    shadowColor: '#e6f2ffff',
+    justifyContent: 'center',
+    marginTop: 28,
+    shadowColor: '#e6f2ff',
     shadowOpacity: 0.3,
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 6,
   },
   buttonText: {
-    color: '#0e0000ff',
-    fontSize: 18,
+    color: '#0e0000',
+    fontSize: 17,
     fontWeight: '600',
+  },
+  googleButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+  },
+  googleLogo: {
+    width: 22,
+    height: 22,
+    resizeMode: 'contain',
+  },
+  footerContainer: {
+    paddingTop: 50,
+    padding: 30,
+    alignItems: 'center',
+  },
+  footerText: {
+    color: '#777',
+    fontSize: 16,
+    marginBottom: 4,
   },
 });
