@@ -1,13 +1,18 @@
-import { useSignUp } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
-import * as WebBrowser from 'expo-web-browser';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+
+import Toast from 'react-native-toast-message';
+
+import { useSignUp } from '@clerk/clerk-expo';
+import * as WebBrowser from 'expo-web-browser';
 WebBrowser.maybeCompleteAuthSession();
+
 
 export default function index() {
     const router=useRouter();
-    const { signUp, setActive, isLoaded } = useSignUp();
+
+    const { signUp, isLoaded } = useSignUp();
 
     const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
@@ -40,10 +45,8 @@ export default function index() {
             </TextInput>
           </View>
     
-          {/* BUTTON */}
-          <TouchableOpacity style={styles.button}>
-            <Text style={styles.buttonText}
-            onPress={async () => {
+          {/* CREATE ACCOUNT BUTTON */}
+          <TouchableOpacity style={styles.button} onPress={async () => {
               if (!isLoaded) return;
 
               try {
@@ -57,15 +60,47 @@ export default function index() {
                 // Verify email automatically (Clerk handles OTP emails)
                 await signUp.prepareEmailAddressVerification({ strategy: 'email_code' });
 
+                 Toast.show({
+                  type: 'success',
+                  text1: 'Account Created ',
+                  text2: 'Check your email for verification OTP.',
+                });
+
                router.push({
                   pathname: 'auth/verifyOTP',
                   params: { email }, // pass email to OTP screen
                 });
               } catch (err) {
-                console.error('Sign-up error:', err);
+                // console.error('Sign-up error:', err);
+
+                const errorObj = err?.errors?.[0] || {};
+                const code = errorObj?.code;
+                const message = errorObj?.message || err.message || 'Something went wrong.';
+
+                if (code === 'form_identifier_already_exists' || message.includes('taken')) {
+                  Toast.show({
+                    type: 'error',
+                    text1: 'Email already registered',
+                    text2: 'Try signing in instead.',
+                  });
+                } else if (message.toLowerCase().includes('password')) {
+                  Toast.show({
+                    type: 'error',
+                    text1: 'Weak password',
+                    text2: 'Please choose a stronger password.',
+                  });
+                } else {
+                  Toast.show({
+                    type: 'error',
+                    text1: 'Sign-up Failed',
+                    text2: message,
+                  });
+                }
+
+
               }
-            }}
-            >Create Account</Text>
+            }}>
+            <Text style={styles.buttonText}>Create Account</Text>
           </TouchableOpacity>
 
 
