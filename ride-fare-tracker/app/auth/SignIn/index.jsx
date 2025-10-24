@@ -1,18 +1,19 @@
-import { useAuth, useOAuth, useSignIn } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
-import { Image } from 'react-native';
-
-import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-
-import * as WebBrowser from 'expo-web-browser';
 import { useState } from 'react';
+import { Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+
+import Toast from 'react-native-toast-message';
+
+import { useOAuth, useSignIn } from '@clerk/clerk-expo';
+import * as WebBrowser from 'expo-web-browser';
 WebBrowser.maybeCompleteAuthSession();
 
 export default function SignIn() {
   const router=useRouter();
+
   const { signIn, setActive, isLoaded } = useSignIn();
-  const { isSignedIn } = useAuth();
   const { startOAuthFlow } = useOAuth({ strategy: 'oauth_google' });
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
@@ -38,26 +39,67 @@ export default function SignIn() {
         </TextInput>
       </View>
 
-      {/* BUTTON */}
-      <TouchableOpacity style={styles.button} onPress={async () => {
+      {/* SIGNIN ACCOUNT BUTTON */}
+      <TouchableOpacity style={styles.button} 
+      
+      onPress={async () => {
                 if (!isLoaded) return;
                 try {
-                  // Simple sign-in
+                  // Sign-in
                   const signInResult = await signIn.create({ identifier: email, password });
 
                   if (signInResult.status === 'complete') {
+                    
                     await setActive({ session: signInResult.createdSessionId });
+
+                    Toast.show({
+                      type: 'success',
+                      text1: 'Login successful',
+                      text2: 'Welcome back!!',
+                    });
+
                     router.replace('/(tabs)');
                   } else {
-                    Alert.alert('Sign-in Error', 'Check your credentials or verify your account.');
+
+                    Toast.show({
+                      type: 'info',
+                      text1: 'Verification required',
+                      text2: 'Please check your email for verification.',
+                    });
+
                   }
                 } catch (err) {
-                  console.error('Sign-in error:', err);
-                  Alert.alert('Sign-in Failed', err.errors?.[0]?.message || 'Invalid credentials.');
+
+                  // console.error('Sign-in error:', err);
+
+                  const errorObj = err?.errors?.[0] || {};
+                  const code = errorObj?.code;
+                  const message = errorObj?.message || err.message || '';
+
+
+                  if (code === 'form_identifier_not_found'|| message.includes('not found')) {
+                    Toast.show({
+                      type: 'error',
+                      text1: 'User not found',
+                      text2: 'Please sign up before logging in.',
+                    });
+                  } else if (code === 'form_password_incorrect'|| message.includes('Password is incorrect')) {
+                    Toast.show({
+                      type: 'error',
+                      text1: 'Incorrect password',
+                      text2: 'Try again or reset your password.',
+                    });
+                  } else {
+                    Toast.show({
+                      type: 'error',
+                      text1: 'Sign-in Failed',
+                      text2: err.errors?.[0]?.message || 'Unexpected error occurred.',
+                    });
+                  }
+                  
                 }}
 }>
-        <Text style={styles.buttonText} 
-            >Sign In</Text>
+        <Text style={styles.buttonText}>Sign In</Text>
       </TouchableOpacity>
 
 
@@ -68,10 +110,28 @@ export default function SignIn() {
               const { createdSessionId, setActive } = await startOAuthFlow();
               if (createdSessionId) {
                 await setActive({ session: createdSessionId });
+
+                Toast.show({
+                      type: 'success',
+                      text1: 'Login successful',
+                      text2: 'Welcome back!!',
+                    });
+
                 router.replace('(tabs)');
+              }else{
+                Toast.show({
+                  type: 'info',
+                  text1: 'Google Sign-in Incomplete',
+                  text2: 'Please try again or use email/password.',
+                });
               }
             } catch (err) {
               console.error('Google sign-in error:', err);
+              Toast.show({
+                type: 'error',
+                text1: 'Google Sign-in Failed',
+                text2: 'Something went wrong. Please try again.',
+              });
             }
           }}
         >
