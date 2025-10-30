@@ -1,8 +1,8 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet ,View,Text} from 'react-native';
 import ParallaxScrollView from '@/components/parallax-scroll-view';
 import { ThemedText } from '@/components/themed-text';
-import { Link } from 'expo-router';
+import { Image } from 'expo-image';
+import { Dimensions, StyleSheet, View } from 'react-native';
+const { width } = Dimensions.get('window');
 
 export default function HomeScreen() {
   return (
@@ -10,8 +10,9 @@ export default function HomeScreen() {
       headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
       headerImage={
         <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
+          source={require('@/assets/images/cover-page-pic.png')}
+          style={styles.headerImage}
+           contentFit="cover"
         />
       }>
       <View style={styles.titleContainer}>
@@ -39,5 +40,9 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     position: 'absolute',
+  },
+  headerImage: {
+    width: width,
+    height: 250, 
   },
 });

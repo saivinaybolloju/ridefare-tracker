@@ -1,13 +1,21 @@
-import { Tabs } from 'expo-router';
-import React from 'react';
-
 import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useAuth } from '@clerk/clerk-expo';
+import { Tabs, useRouter } from 'expo-router';
+import React, { useEffect } from 'react';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
+  const { isSignedIn, isLoaded } = useAuth();
+  const router = useRouter();
+
+   useEffect(() => {
+    if (isLoaded && !isSignedIn) {
+      router.replace('/auth/SignIn');
+    }
+  }, [isLoaded, isSignedIn]);
 
   return (
     <Tabs
@@ -28,6 +36,13 @@ export default function TabLayout() {
         options={{
           title: 'Explore',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Profile',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.fill" color={color} />,
         }}
       />
     </Tabs>
