@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.routes import uber
+from app.routes import uber,ola
 
 app = FastAPI(
     title="RideFare Backend API",
@@ -8,6 +8,7 @@ app = FastAPI(
 )
 
 app.include_router(uber.router, prefix="/api/uber")
+app.include_router(ola.router, prefix="/api/ola")
 
 @app.get("/")
 def root():
